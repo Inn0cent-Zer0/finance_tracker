@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dashboard – Finance Tracker</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --surface: #111827;
+      --surface2: #1f2937;
+      --border: #374151;
+      --muted: #6b7280;
+      --text: #e5e7eb;
+      --text2: #9ca3af;
+      --primary: #6366f1;
+      --primary-h: #5458ee;
+      --green: #10b981;
+      --red: #ef4444;
+      --yellow: #f59e0b;
+      --ring: rgba(99,102,241,0.4);
+      --radius: 12px;
+      --shadow: 0 4px 24px rgba(0,0,0,0.4);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      background: var(--bg); color: var(--text); min-height: 100vh;
+      display: flex; flex-direction: column;
+    }
+
+    /* ── NAV ── */
+    nav {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      height: 60px;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .nav-brand { font-weight: 700; font-size: 1.1rem; color: var(--primary); letter-spacing: .3px; }
+    .nav-right  { display: flex; align-items: center; gap: 16px; }
+    .nav-user   { font-size: .85rem; color: var(--text2); }
+    .btn-logout {
+      background: transparent; border: 1px solid var(--border);
+      color: var(--text2); padding: 6px 14px; border-radius: 8px;
+      cursor: pointer; font-size: .85rem; transition: background .15s, color .15s;
+    }
+    .btn-logout:hover { background: var(--surface2); color: var(--text); }
+
+    /* ── MAIN LAYOUT ── */
+    main { flex: 1; padding: 28px 24px; max-width: 1100px; margin: 0 auto; width: 100%; }
+
+    /* ── SUMMARY CARDS ── */
+    .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 28px; }
+    @media(max-width:640px){ .cards { grid-template-columns: 1fr; } }
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px; position: relative; overflow: hidden;
+    }
+    .card-label { font-size: .8rem; color: var(--text2); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 8px; }
+    .card-amount { font-size: 1.7rem; font-weight: 700; }
+    .card-amount.green { color: var(--green); }
+    .card-amount.red   { color: var(--red); }
+    .card-amount.white { color: var(--text); }
+    .card-icon { position: absolute; right: 18px; top: 50%; transform: translateY(-50%); font-size: 2rem; opacity: .15; }
+
+    /* ── TOOLBAR ── */
+    .toolbar {
+      display: flex; align-items: center; gap: 12px;
+      flex-wrap: wrap; margin-bottom: 18px;
+    }
+    .toolbar-title { font-size: 1.1rem; font-weight: 600; flex: 1; }
+    .filter-select {
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--text); padding: 8px 12px; border-radius: 8px;
+      font-size: .85rem; cursor: pointer; outline: none;
+    }
+    .filter-select:focus { border-color: var(--primary); }
+    .btn-add {
+      background: var(--primary); color: #fff; border: none;
+      padding: 9px 18px; border-radius: 10px; font-weight: 600;
+      cursor: pointer; font-size: .9rem; transition: filter .15s;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .btn-add:hover { filter: brightness(1.1); }
+
+    /* ── TABLE ── */
+    .table-wrap {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    thead th {
+      background: var(--surface2); padding: 12px 16px;
+      text-align: left; font-size: .8rem; text-transform: uppercase;
+      letter-spacing: .6px; color: var(--text2); font-weight: 600;
+    }
+    tbody tr { border-top: 1px solid var(--border); transition: background .1s; }
+    tbody tr:hover { background: rgba(255,255,255,0.02); }
+    td { padding: 13px 16px; font-size: .9rem; vertical-align: middle; }
+    .badge {
+      display: inline-block; padding: 3px 10px; border-radius: 20px;
+      font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .4px;
+    }
+    .badge-income  { background: rgba(16,185,129,.15); color: var(--green); }
+    .badge-expense { background: rgba(239,68,68,.15);  color: var(--red); }
+    .cat-badge {
+      display: inline-block; padding: 3px 9px; border-radius: 6px;
+      font-size: .78rem; background: var(--surface2); color: var(--text2);
+    }
+    .amount-income  { color: var(--green); font-weight: 600; }
+    .amount-expense { color: var(--red);   font-weight: 600; }
+    .action-btn {
+      background: transparent; border: 1px solid var(--border);
+      color: var(--text2); padding: 5px 12px; border-radius: 7px;
+      cursor: pointer; font-size: .8rem; transition: background .12s, color .12s;
+    }
+    .action-btn:hover { background: var(--surface2); color: var(--text); }
+    .action-btn.del:hover { border-color: var(--red); color: var(--red); }
+    .empty-row td { text-align: center; padding: 40px; color: var(--muted); }
+
+    /* ── MODAL ── */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,.65);
+      display: none; place-items: center; z-index: 200; padding: 20px;
+    }
+    .modal-overlay.open { display: grid; }
+    .modal {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; width: 100%; max-width: 500px;
+      box-shadow: var(--shadow); overflow: hidden;
+    }
+    .modal-header {
+      padding: 20px 24px 16px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .modal-title { font-size: 1.1rem; font-weight: 700; }
+    .modal-close {
+      background: transparent; border: none; color: var(--muted);
+      font-size: 1.4rem; cursor: pointer; line-height: 1; padding: 2px 6px;
+      border-radius: 6px;
+    }
+    .modal-close:hover { color: var(--text); background: var(--surface2); }
+    .modal-body { padding: 20px 24px; display: grid; gap: 14px; }
+    .modal-footer {
+      padding: 16px 24px; border-top: 1px solid var(--border);
+      display: flex; justify-content: flex-end; gap: 10px;
+    }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .form-group { display: grid; gap: 6px; }
+    .form-group label { font-size: .85rem; color: var(--text2); }
+    .form-control {
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--text); padding: 10px 12px; border-radius: 9px;
+      font-size: .9rem; outline: none; width: 100%;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .form-control:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--ring); }
+    .btn-cancel {
+      background: transparent; border: 1px solid var(--border);
+      color: var(--text2); padding: 10px 18px; border-radius: 10px;
+      cursor: pointer; font-size: .9rem; transition: background .15s;
+    }
+    .btn-cancel:hover { background: var(--surface2); color: var(--text); }
+    .btn-save {
+      background: var(--primary); color: #fff; border: none;
+      padding: 10px 22px; border-radius: 10px; font-weight: 600;
+      cursor: pointer; font-size: .9rem; transition: filter .15s;
+    }
+    .btn-save:hover { filter: brightness(1.1); }
+    .btn-save:disabled { opacity: .6; cursor: not-allowed; }
+
+    /* ── TOAST ── */
+    #toast {
+      position: fixed; bottom: 24px; left: 50%;
+      transform: translateX(-50%) translateY(40px);
+      padding: 11px 20px; border-radius: 10px; font-size: .9rem; font-weight: 500;
+      opacity: 0; transition: opacity .3s, transform .3s; pointer-events: none; z-index: 999;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    #toast.ok    { background: #065f46; color: #34d399; border: 1px solid #34d399; }
+    #toast.error { background: #7f1d1d; color: #f87171; border: 1px solid #f87171; }
+
+    /* ── LOADER ── */
+    .spinner {
+      width: 20px; height: 20px; border: 2px solid var(--border);
+      border-top-color: var(--primary); border-radius: 50%;
+      animation: spin .6s linear infinite; margin: 40px auto; display: block;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <span class="nav-brand">💰 Finance Tracker</span>
+    <div class="nav-right">
+      <span class="nav-user" id="navUser">Loading…</span>
+      <button class="btn-logout" id="logoutBtn">Sign Out</button>
+    </div>
+  </nav>
+
+  <main>
+    <!-- SUMMARY CARDS -->
+    <div class="cards">
+      <div class="card">
+        <div class="card-label">Total Income</div>
+        <div class="card-amount green" id="totalIncome">₹0</div>
+        <span class="card-icon">💵</span>
+      </div>
+      <div class="card">
+        <div class="card-label">Total Expenses</div>
+        <div class="card-amount red" id="totalExpense">₹0</div>
+        <span class="card-icon">🧾</span>
+      </div>
+      <div class="card">
+        <div class="card-label">Balance</div>
+        <div class="card-amount white" id="balance">₹0</div>
+        <span class="card-icon">📊</span>
+      </div>
+    </div>
+
+    <!-- TOOLBAR -->
+    <div class="toolbar">
+      <span class="toolbar-title">Transactions</span>
+      <select class="filter-select" id="filterType">
+        <option value="">All Types</option>
+        <option value="INCOME">Income</option>
+        <option value="EXPENSE">Expense</option>
+      </select>
+      <select class="filter-select" id="filterCategory">
+        <option value="">All Categories</option>
+      </select>
+      <button class="btn-add" id="addBtn">＋ Add Transaction</button>
+    </div>
+
+    <!-- TABLE -->
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Type</th>
+            <th>Category</th>
+            <th>Description</th>
+            <th>Amount</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="txBody">
+          <tr><td colspan="6"><div class="spinner"></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <!-- ADD / EDIT MODAL -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+      <div class="modal-header">
+        <span class="modal-title" id="modalTitle">Add Transaction</span>
+        <button class="modal-close" id="modalClose">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Type *</label>
+            <select class="form-control" id="fType">
+              <option value="EXPENSE">Expense</option>
+              <option value="INCOME">Income</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Category *</label>
+            <select class="form-control" id="fCategory"></select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Amount (₹) *</label>
+            <input class="form-control" type="number" id="fAmount" placeholder="e.g. 1500" min="0" step="0.01" />
+          </div>
+          <div class="form-group">
+            <label>Date *</label>
+            <input class="form-control" type="date" id="fDate" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <input class="form-control" type="text" id="fDesc" placeholder="e.g. Paid electricity bill" maxlength="200" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" id="cancelBtn">Cancel</button>
+        <button class="btn-save"   id="saveBtn">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+  <script>
+    // ── Config ────────────────────────────────────────────────────────────────
+    const API = '/api/transactions';
+    const token = localStorage.getItem('token');
+
+    // Redirect to login if no token
+    if (!token) { window.location.href = '/login.html'; }
+
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    document.getElementById('navUser').textContent = user.username || user.email || '';
+
+    // ── Categories per type ───────────────────────────────────────────────────
+    const CATEGORIES = {
+      EXPENSE: ['RENT','FOOD','TRAVEL','UTILITIES','HEALTHCARE','EDUCATION','ENTERTAINMENT','SHOPPING','OTHER_EXPENSE'],
+      INCOME:  ['SALARY','FREELANCE','INVESTMENT','BUSINESS','OTHER_INCOME']
+    };
+
+    const CAT_LABELS = {
+      RENT:'Rent', FOOD:'Food', TRAVEL:'Travel', UTILITIES:'Utilities',
+      HEALTHCARE:'Healthcare', EDUCATION:'Education', ENTERTAINMENT:'Entertainment',
+      SHOPPING:'Shopping', OTHER_EXPENSE:'Other',
+      SALARY:'Salary', FREELANCE:'Freelance', INVESTMENT:'Investment',
+      BUSINESS:'Business', OTHER_INCOME:'Other Income'
+    };
+
+    // ── State ─────────────────────────────────────────────────────────────────
+    let allTransactions = [];
+    let editingId = null;
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+    function fmt(n) {
+      return '₹' + Number(n).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function showToast(msg, type = 'ok') {
+      const t = document.getElementById('toast');
+      t.textContent = msg; t.className = 'show ' + type;
+      setTimeout(() => { t.className = ''; }, 3200);
+    }
+
+    async function apiFetch(url, opts = {}) {
+      const res = await fetch(url, {
+        ...opts,
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token, ...(opts.headers || {}) }
+      });
+      if (res.status === 401) { window.location.href = '/login.html'; }
+      return res;
+    }
+
+    // ── Load all transactions + summary ───────────────────────────────────────
+    async function loadAll() {
+      try {
+        const [txRes, sumRes] = await Promise.all([
+          apiFetch(API),
+          apiFetch(API + '/summary')
+        ]);
+        allTransactions = await txRes.json();
+        const sum = await sumRes.json();
+
+        document.getElementById('totalIncome').textContent  = fmt(sum.totalIncome);
+        document.getElementById('totalExpense').textContent = fmt(sum.totalExpense);
+        const balEl = document.getElementById('balance');
+        balEl.textContent = fmt(sum.balance);
+        balEl.className = 'card-amount ' + (sum.balance >= 0 ? 'green' : 'red');
+
+        renderTable();
+        buildCategoryFilter();
+      } catch (e) {
+        showToast('Failed to load transactions.', 'error');
+      }
+    }
+
+    // ── Render table (with filters) ────────────────────────────────────────────
+    function renderTable() {
+      const typeFilter = document.getElementById('filterType').value;
+      const catFilter  = document.getElementById('filterCategory').value;
+      const tbody = document.getElementById('txBody');
+
+      let rows = allTransactions
+        .filter(t => !typeFilter || t.type === typeFilter)
+        .filter(t => !catFilter  || t.category === catFilter);
+
+      if (rows.length === 0) {
+        tbody.innerHTML = `<tr class="empty-row"><td colspan="6">No transactions found. Add one to get started!</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = rows.map(t => `
+        <tr>
+          <td>${t.date}</td>
+          <td><span class="badge badge-${t.type.toLowerCase()}">${t.type}</span></td>
+          <td><span class="cat-badge">${CAT_LABELS[t.category] || t.category}</span></td>
+          <td style="color:var(--text2)">${t.description || '—'}</td>
+          <td class="amount-${t.type.toLowerCase()}">${t.type === 'INCOME' ? '+' : '-'}${fmt(t.amount)}</td>
+          <td style="display:flex;gap:6px">
+            <button class="action-btn"     onclick="openEdit(${t.id})">Edit</button>
+            <button class="action-btn del" onclick="deleteTx(${t.id})">Delete</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    // ── Build category filter dropdown ────────────────────────────────────────
+    function buildCategoryFilter() {
+      const usedCats = [...new Set(allTransactions.map(t => t.category))];
+      const sel = document.getElementById('filterCategory');
+      const current = sel.value;
+      sel.innerHTML = '<option value="">All Categories</option>' +
+        usedCats.map(c => `<option value="${c}" ${c === current ? 'selected' : ''}>${CAT_LABELS[c] || c}</option>`).join('');
+    }
+
+    // ── Update category dropdown in form based on selected type ──────────────
+    function updateFormCategories() {
+      const type = document.getElementById('fType').value;
+      const cats = CATEGORIES[type] || [];
+      document.getElementById('fCategory').innerHTML =
+        cats.map(c => `<option value="${c}">${CAT_LABELS[c]}</option>`).join('');
+    }
+
+    // ── Open modal for ADD ────────────────────────────────────────────────────
+    function openAdd() {
+      editingId = null;
+      document.getElementById('modalTitle').textContent = 'Add Transaction';
+      document.getElementById('fType').value = 'EXPENSE';
+      updateFormCategories();
+      document.getElementById('fAmount').value = '';
+      document.getElementById('fDate').value   = new Date().toISOString().slice(0, 10);
+      document.getElementById('fDesc').value   = '';
+      document.getElementById('modalOverlay').classList.add('open');
+    }
+
+    // ── Open modal for EDIT ───────────────────────────────────────────────────
+    function openEdit(id) {
+      const t = allTransactions.find(x => x.id === id);
+      if (!t) return;
+      editingId = id;
+      document.getElementById('modalTitle').textContent = 'Edit Transaction';
+      document.getElementById('fType').value   = t.type;
+      updateFormCategories();
+      document.getElementById('fCategory').value = t.category;
+      document.getElementById('fAmount').value   = t.amount;
+      document.getElementById('fDate').value     = t.date;
+      document.getElementById('fDesc').value     = t.description || '';
+      document.getElementById('modalOverlay').classList.add('open');
+    }
+
+    function closeModal() {
+      document.getElementById('modalOverlay').classList.remove('open');
+    }
+
+    // ── Save (create or update) ───────────────────────────────────────────────
+    async function saveTx() {
+      const type     = document.getElementById('fType').value;
+      const category = document.getElementById('fCategory').value;
+      const amount   = parseFloat(document.getElementById('fAmount').value);
+      const date     = document.getElementById('fDate').value;
+      const desc     = document.getElementById('fDesc').value.trim();
+
+      if (!category || isNaN(amount) || amount <= 0 || !date) {
+        showToast('Please fill in all required fields.', 'error'); return;
+      }
+
+      const payload = { type, category, amount, date, description: desc || null };
+      const saveBtn = document.getElementById('saveBtn');
+      saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
+
+      try {
+        const res = await apiFetch(
+          editingId ? `${API}/${editingId}` : API,
+          { method: editingId ? 'PUT' : 'POST', body: JSON.stringify(payload) }
+        );
+        const data = await res.json();
+        if (!res.ok) { showToast(data.error || 'Save failed.', 'error'); return; }
+
+        showToast(editingId ? 'Transaction updated!' : 'Transaction added!', 'ok');
+        closeModal();
+        await loadAll();
+      } catch (e) {
+        showToast('Network error. Try again.', 'error');
+      } finally {
+        saveBtn.disabled = false; saveBtn.textContent = 'Save';
+      }
+    }
+
+    // ── Delete ────────────────────────────────────────────────────────────────
+    async function deleteTx(id) {
+      if (!confirm('Delete this transaction?')) return;
+      try {
+        const res = await apiFetch(`${API}/${id}`, { method: 'DELETE' });
+        if (!res.ok) { showToast('Delete failed.', 'error'); return; }
+        showToast('Transaction deleted.', 'ok');
+        await loadAll();
+      } catch (e) {
+        showToast('Network error.', 'error');
+      }
+    }
+
+    // ── Event listeners ───────────────────────────────────────────────────────
+    document.getElementById('addBtn').addEventListener('click', openAdd);
+    document.getElementById('modalClose').addEventListener('click', closeModal);
+    document.getElementById('cancelBtn').addEventListener('click', closeModal);
+    document.getElementById('saveBtn').addEventListener('click', saveTx);
+    document.getElementById('fType').addEventListener('change', updateFormCategories);
+    document.getElementById('filterType').addEventListener('change', renderTable);
+    document.getElementById('filterCategory').addEventListener('change', renderTable);
+    document.getElementById('modalOverlay').addEventListener('click', e => {
+      if (e.target === document.getElementById('modalOverlay')) closeModal();
+    });
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = '/login.html';
+    });
+
+    // ── Init ──────────────────────────────────────────────────────────────────
+    loadAll();
+  </script>
+</body>
+</html>
