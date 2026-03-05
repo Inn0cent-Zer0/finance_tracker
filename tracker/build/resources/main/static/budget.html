@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Budget & Goals – Finance Tracker</title>
+  <style>
+    :root {
+      --bg:#0f172a; --surface:#111827; --surface2:#1f2937;
+      --border:#374151; --muted:#6b7280; --text:#e5e7eb; --text2:#9ca3af;
+      --primary:#6366f1; --primary-h:#5458ee;
+      --green:#10b981; --red:#ef4444; --yellow:#f59e0b; --blue:#3b82f6;
+      --ring:rgba(99,102,241,0.4); --radius:12px; --shadow:0 4px 24px rgba(0,0,0,0.4);
+    }
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+      background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;}
+
+    /* NAV */
+    nav{background:var(--surface);border-bottom:1px solid var(--border);
+      padding:0 24px;height:60px;display:flex;align-items:center;justify-content:space-between;
+      position:sticky;top:0;z-index:100;}
+    .nav-brand{font-weight:700;font-size:1.1rem;color:var(--primary);}
+    .nav-links{display:flex;gap:6px;}
+    .nav-link{background:transparent;border:none;color:var(--text2);padding:7px 14px;
+      border-radius:8px;cursor:pointer;font-size:.88rem;text-decoration:none;
+      transition:background .15s,color .15s;}
+    .nav-link:hover,.nav-link.active{background:var(--surface2);color:var(--text);}
+    .nav-right{display:flex;align-items:center;gap:12px;}
+    .btn-logout{background:transparent;border:1px solid var(--border);color:var(--text2);
+      padding:6px 14px;border-radius:8px;cursor:pointer;font-size:.85rem;transition:background .15s;}
+    .btn-logout:hover{background:var(--surface2);color:var(--text);}
+
+    /* LAYOUT */
+    main{flex:1;padding:28px 24px;max-width:1100px;margin:0 auto;width:100%;}
+
+    /* TABS */
+    .tabs{display:flex;gap:8px;margin-bottom:24px;border-bottom:1px solid var(--border);padding-bottom:0;}
+    .tab{background:transparent;border:none;color:var(--text2);padding:10px 20px;
+      cursor:pointer;font-size:.95rem;font-weight:500;border-bottom:2px solid transparent;
+      margin-bottom:-1px;transition:color .15s,border-color .15s;}
+    .tab:hover{color:var(--text);}
+    .tab.active{color:var(--primary);border-bottom-color:var(--primary);}
+    .tab-panel{display:none;}
+    .tab-panel.active{display:block;}
+
+    /* MONTH PICKER */
+    .month-bar{display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;}
+    .month-bar label{font-size:.9rem;color:var(--text2);}
+    .form-control{background:var(--surface2);border:1px solid var(--border);color:var(--text);
+      padding:9px 12px;border-radius:9px;font-size:.9rem;outline:none;
+      transition:border-color .15s,box-shadow .15s;}
+    .form-control:focus{border-color:var(--primary);box-shadow:0 0 0 3px var(--ring);}
+    select.form-control{cursor:pointer;}
+
+    /* BUDGET GRID */
+    .budget-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;margin-bottom:20px;}
+    .budget-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;}
+    .budget-card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+    .budget-cat{font-weight:600;font-size:.95rem;}
+    .budget-amounts{display:flex;gap:6px;align-items:center;}
+    .budget-spent{font-size:.85rem;color:var(--text2);}
+    .budget-limit{font-size:.85rem;color:var(--text2);}
+    .progress-bar-wrap{background:var(--surface2);border-radius:99px;height:8px;overflow:hidden;margin-bottom:8px;}
+    .progress-bar{height:100%;border-radius:99px;transition:width .4s ease;}
+    .progress-bar.safe{background:var(--green);}
+    .progress-bar.warn{background:var(--yellow);}
+    .progress-bar.over{background:var(--red);}
+    .budget-footer{display:flex;justify-content:space-between;align-items:center;margin-top:8px;}
+    .remaining-text{font-size:.82rem;}
+    .remaining-text.ok{color:var(--green);}
+    .remaining-text.warn{color:var(--yellow);}
+    .remaining-text.over{color:var(--red);}
+    .pct-text{font-size:.82rem;color:var(--text2);}
+
+    /* SAVINGS GOALS */
+    .goals-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;margin-bottom:20px;}
+    .goal-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;}
+    .goal-card.achieved{border-color:var(--green);background:rgba(16,185,129,0.05);}
+    .goal-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;}
+    .goal-name{font-weight:600;font-size:.95rem;}
+    .achieved-badge{background:rgba(16,185,129,.15);color:var(--green);
+      font-size:.72rem;font-weight:700;padding:2px 8px;border-radius:20px;text-transform:uppercase;}
+    .goal-deadline{font-size:.8rem;color:var(--muted);margin-bottom:12px;}
+    .goal-amounts{display:flex;justify-content:space-between;font-size:.85rem;color:var(--text2);margin-bottom:8px;}
+
+    /* TOOLBAR */
+    .section-toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;}
+    .section-title{font-size:1rem;font-weight:600;}
+    .btn-add{background:var(--primary);color:#fff;border:none;padding:9px 18px;
+      border-radius:10px;font-weight:600;cursor:pointer;font-size:.88rem;transition:filter .15s;}
+    .btn-add:hover{filter:brightness(1.1);}
+    .empty-state{text-align:center;padding:48px 20px;color:var(--muted);font-size:.95rem;}
+
+    /* MODAL */
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);
+      display:none;place-items:center;z-index:200;padding:20px;}
+    .modal-overlay.open{display:grid;}
+    .modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;
+      width:100%;max-width:460px;box-shadow:var(--shadow);overflow:hidden;}
+    .modal-header{padding:20px 24px 16px;border-bottom:1px solid var(--border);
+      display:flex;align-items:center;justify-content:space-between;}
+    .modal-title{font-size:1.05rem;font-weight:700;}
+    .modal-close{background:transparent;border:none;color:var(--muted);
+      font-size:1.3rem;cursor:pointer;padding:2px 6px;border-radius:6px;}
+    .modal-close:hover{color:var(--text);background:var(--surface2);}
+    .modal-body{padding:20px 24px;display:grid;gap:14px;}
+    .modal-footer{padding:16px 24px;border-top:1px solid var(--border);
+      display:flex;justify-content:flex-end;gap:10px;}
+    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+    .form-group{display:grid;gap:6px;}
+    .form-group label{font-size:.85rem;color:var(--text2);}
+    .form-control-full{width:100%;}
+    .btn-cancel{background:transparent;border:1px solid var(--border);color:var(--text2);
+      padding:10px 18px;border-radius:10px;cursor:pointer;font-size:.9rem;}
+    .btn-cancel:hover{background:var(--surface2);color:var(--text);}
+    .btn-save{background:var(--primary);color:#fff;border:none;padding:10px 22px;
+      border-radius:10px;font-weight:600;cursor:pointer;font-size:.9rem;}
+    .btn-save:hover{filter:brightness(1.1);}
+    .btn-save:disabled{opacity:.6;cursor:not-allowed;}
+    .action-btn{background:transparent;border:1px solid var(--border);color:var(--text2);
+      padding:4px 11px;border-radius:7px;cursor:pointer;font-size:.78rem;transition:background .12s;}
+    .action-btn:hover{background:var(--surface2);color:var(--text);}
+    .action-btn.del:hover{border-color:var(--red);color:var(--red);}
+
+    /* TOAST */
+    #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(40px);
+      padding:11px 20px;border-radius:10px;font-size:.9rem;font-weight:500;
+      opacity:0;transition:opacity .3s,transform .3s;pointer-events:none;z-index:999;}
+    #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+    #toast.ok{background:#065f46;color:#34d399;border:1px solid #34d399;}
+    #toast.error{background:#7f1d1d;color:#f87171;border:1px solid #f87171;}
+
+    .spinner{width:20px;height:20px;border:2px solid var(--border);
+      border-top-color:var(--primary);border-radius:50%;
+      animation:spin .6s linear infinite;margin:40px auto;display:block;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+  </style>
+</head>
+<body>
+
+<nav>
+  <span class="nav-brand">💰 Finance Tracker</span>
+  <div class="nav-links">
+    <a class="nav-link" href="/dashboard.html">Transactions</a>
+    <a class="nav-link active" href="/budget.html">Budget & Goals</a>
+  </div>
+  <div class="nav-right">
+    <span style="font-size:.85rem;color:var(--text2)" id="navUser"></span>
+    <button class="btn-logout" id="logoutBtn">Sign Out</button>
+  </div>
+</nav>
+
+<main>
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab active" data-tab="budgets">📊 Monthly Budgets</button>
+    <button class="tab" data-tab="goals">🎯 Savings Goals</button>
+  </div>
+
+  <!-- ── BUDGETS TAB ── -->
+  <div class="tab-panel active" id="tab-budgets">
+    <div class="month-bar">
+      <label>Month:</label>
+      <select class="form-control" id="monthSel" style="width:140px"></select>
+      <label>Year:</label>
+      <select class="form-control" id="yearSel" style="width:100px"></select>
+      <button class="btn-add" id="loadBudgetsBtn">Load</button>
+    </div>
+
+    <div class="section-toolbar">
+      <span class="section-title" id="budgetHeading">Budgets</span>
+      <button class="btn-add" id="addBudgetBtn">＋ Set Budget</button>
+    </div>
+
+    <div class="budget-grid" id="budgetGrid">
+      <div class="spinner"></div>
+    </div>
+  </div>
+
+  <!-- ── GOALS TAB ── -->
+  <div class="tab-panel" id="tab-goals">
+    <div class="section-toolbar">
+      <span class="section-title">Savings Goals</span>
+      <button class="btn-add" id="addGoalBtn">＋ Add Goal</button>
+    </div>
+    <div class="goals-grid" id="goalsGrid">
+      <div class="spinner"></div>
+    </div>
+  </div>
+</main>
+
+<!-- BUDGET MODAL -->
+<div class="modal-overlay" id="budgetModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Set Budget</span>
+      <button class="modal-close" onclick="closeBudgetModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Category *</label>
+          <select class="form-control form-control-full" id="bCategory"></select>
+        </div>
+        <div class="form-group">
+          <label>Limit Amount (₹) *</label>
+          <input class="form-control form-control-full" type="number" id="bLimit" placeholder="e.g. 5000" min="1" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Month *</label>
+          <select class="form-control form-control-full" id="bMonth"></select>
+        </div>
+        <div class="form-group">
+          <label>Year *</label>
+          <select class="form-control form-control-full" id="bYear"></select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeBudgetModal()">Cancel</button>
+      <button class="btn-save" id="saveBudgetBtn">Save Budget</button>
+    </div>
+  </div>
+</div>
+
+<!-- GOAL MODAL -->
+<div class="modal-overlay" id="goalModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="goalModalTitle">Add Savings Goal</span>
+      <button class="modal-close" onclick="closeGoalModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Goal Name *</label>
+        <input class="form-control form-control-full" type="text" id="gName" placeholder="e.g. Buy a laptop" />
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Target Amount (₹) *</label>
+          <input class="form-control form-control-full" type="number" id="gTarget" placeholder="e.g. 50000" min="1" />
+        </div>
+        <div class="form-group">
+          <label>Saved So Far (₹)</label>
+          <input class="form-control form-control-full" type="number" id="gSaved" placeholder="e.g. 10000" min="0" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Target Date (optional)</label>
+        <input class="form-control form-control-full" type="date" id="gDeadline" />
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeGoalModal()">Cancel</button>
+      <button class="btn-save" id="saveGoalBtn">Save Goal</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+  const token = localStorage.getItem('token');
+  if (!token) window.location.href = '/login.html';
+
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  document.getElementById('navUser').textContent = user.username || '';
+
+  const MONTHS = ['January','February','March','April','May','June',
+                  'July','August','September','October','November','December'];
+  const EXPENSE_CATS = ['RENT','FOOD','TRAVEL','UTILITIES','HEALTHCARE','EDUCATION','ENTERTAINMENT','SHOPPING','OTHER_EXPENSE'];
+  const CAT_LABELS = {
+    RENT:'Rent',FOOD:'Food',TRAVEL:'Travel',UTILITIES:'Utilities',HEALTHCARE:'Healthcare',
+    EDUCATION:'Education',ENTERTAINMENT:'Entertainment',SHOPPING:'Shopping',OTHER_EXPENSE:'Other',
+    SALARY:'Salary',FREELANCE:'Freelance',INVESTMENT:'Investment',BUSINESS:'Business',OTHER_INCOME:'Other Income'
+  };
+
+  function fmt(n){ return '₹'+Number(n).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+
+  function showToast(msg, type='ok'){
+    const t=document.getElementById('toast');
+    t.textContent=msg; t.className='show '+type;
+    setTimeout(()=>{ t.className=''; },3200);
+  }
+
+  async function apiFetch(url, opts={}){
+    const res = await fetch(url,{
+      ...opts,
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token,...(opts.headers||{})}
+    });
+    if(res.status===401) window.location.href='/login.html';
+    return res;
+  }
+
+  // ── Tabs ──────────────────────────────────────────────────────────────────
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+      if (tab.dataset.tab === 'goals') loadGoals();
+    });
+  });
+
+  // ── Month/Year selectors ──────────────────────────────────────────────────
+  const now = new Date();
+  let currentMonth = now.getMonth() + 1;
+  let currentYear  = now.getFullYear();
+
+  function populateMonthYear() {
+    const mSel = document.getElementById('monthSel');
+    const ySel = document.getElementById('yearSel');
+    const bM   = document.getElementById('bMonth');
+    const bY   = document.getElementById('bYear');
+
+    mSel.innerHTML = MONTHS.map((m,i) =>
+      `<option value="${i+1}" ${i+1===currentMonth?'selected':''}>${m}</option>`).join('');
+    bM.innerHTML = mSel.innerHTML;
+
+    for(let y = currentYear+1; y >= currentYear-3; y--) {
+      const opt = `<option value="${y}" ${y===currentYear?'selected':''}>${y}</option>`;
+      ySel.innerHTML += opt;
+      bY.innerHTML   += opt;
+    }
+
+    // populate budget category dropdown
+    document.getElementById('bCategory').innerHTML =
+      EXPENSE_CATS.map(c => `<option value="${c}">${CAT_LABELS[c]}</option>`).join('');
+  }
+
+  // ── BUDGETS ───────────────────────────────────────────────────────────────
+  async function loadBudgets() {
+    const month = document.getElementById('monthSel').value;
+    const year  = document.getElementById('yearSel').value;
+    document.getElementById('budgetHeading').textContent =
+      `Budgets — ${MONTHS[month-1]} ${year}`;
+
+    const grid = document.getElementById('budgetGrid');
+    grid.innerHTML = '<div class="spinner"></div>';
+
+    const res  = await apiFetch(`/api/budgets?month=${month}&year=${year}`);
+    const data = await res.json();
+
+    if (!data.length) {
+      grid.innerHTML = `<div class="empty-state">No budgets set for ${MONTHS[month-1]} ${year}.<br>Click "Set Budget" to add one.</div>`;
+      return;
+    }
+
+    grid.innerHTML = data.map(b => {
+      const pct   = Math.round(b.percentUsed);
+      const cls   = pct < 70 ? 'safe' : pct < 90 ? 'warn' : 'over';
+      const rCls  = b.remaining >= 0 ? (pct < 70 ? 'ok' : 'warn') : 'over';
+      const rText = b.remaining >= 0
+        ? `${fmt(b.remaining)} remaining`
+        : `${fmt(Math.abs(b.remaining))} over budget!`;
+      return `
+        <div class="budget-card">
+          <div class="budget-card-header">
+            <span class="budget-cat">${CAT_LABELS[b.category]||b.category}</span>
+            <div style="display:flex;gap:6px">
+              <button class="action-btn del" onclick="deleteBudget(${b.id})">Delete</button>
+            </div>
+          </div>
+          <div class="budget-amounts" style="margin-bottom:8px">
+            <span class="budget-spent">${fmt(b.spentAmount)} spent</span>
+            <span style="color:var(--border)">of</span>
+            <span class="budget-limit">${fmt(b.limitAmount)} limit</span>
+          </div>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar ${cls}" style="width:${Math.min(pct,100)}%"></div>
+          </div>
+          <div class="budget-footer">
+            <span class="remaining-text ${rCls}">${rText}</span>
+            <span class="pct-text">${pct}%</span>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  document.getElementById('loadBudgetsBtn').addEventListener('click', loadBudgets);
+  document.getElementById('addBudgetBtn').addEventListener('click', () => {
+    document.getElementById('budgetModal').classList.add('open');
+  });
+
+  function closeBudgetModal() {
+    document.getElementById('budgetModal').classList.remove('open');
+  }
+
+  document.getElementById('saveBudgetBtn').addEventListener('click', async () => {
+    const category    = document.getElementById('bCategory').value;
+    const limitAmount = parseFloat(document.getElementById('bLimit').value);
+    const month       = parseInt(document.getElementById('bMonth').value);
+    const year        = parseInt(document.getElementById('bYear').value);
+
+    if (!category || isNaN(limitAmount) || limitAmount <= 0) {
+      showToast('Please fill all required fields.', 'error'); return;
+    }
+
+    const btn = document.getElementById('saveBudgetBtn');
+    btn.disabled = true; btn.textContent = 'Saving…';
+
+    const res  = await apiFetch('/api/budgets', {
+      method: 'POST',
+      body: JSON.stringify({ category, limitAmount, month, year })
+    });
+    const data = await res.json();
+    btn.disabled = false; btn.textContent = 'Save Budget';
+
+    if (!res.ok) { showToast(data.error || 'Failed to save.', 'error'); return; }
+
+    showToast('Budget saved!', 'ok');
+    closeBudgetModal();
+    document.getElementById('monthSel').value = month;
+    document.getElementById('yearSel').value  = year;
+    loadBudgets();
+  });
+
+  async function deleteBudget(id) {
+    if (!confirm('Delete this budget?')) return;
+    const res = await apiFetch(`/api/budgets/${id}`, { method: 'DELETE' });
+    if (res.ok) { showToast('Budget deleted.', 'ok'); loadBudgets(); }
+    else showToast('Delete failed.', 'error');
+  }
+
+  // ── SAVINGS GOALS ─────────────────────────────────────────────────────────
+  let editingGoalId = null;
+
+  async function loadGoals() {
+    const grid = document.getElementById('goalsGrid');
+    grid.innerHTML = '<div class="spinner"></div>';
+
+    const res  = await apiFetch('/api/savings-goals');
+    const data = await res.json();
+
+    if (!data.length) {
+      grid.innerHTML = `<div class="empty-state">No savings goals yet.<br>Click "Add Goal" to create one.</div>`;
+      return;
+    }
+
+    grid.innerHTML = data.map(g => {
+      const pct    = Math.round(g.percentAchieved);
+      const cls    = g.achieved ? 'safe' : pct < 50 ? 'safe' : pct < 80 ? 'warn' : 'safe';
+      const dlText = g.deadline ? `🗓 Target: ${g.deadline}` : '';
+      return `
+        <div class="goal-card ${g.achieved ? 'achieved' : ''}">
+          <div class="goal-header">
+            <span class="goal-name">${g.goalName}</span>
+            ${g.achieved ? '<span class="achieved-badge">✓ Achieved</span>' : ''}
+          </div>
+          <div class="goal-deadline">${dlText}</div>
+          <div class="goal-amounts">
+            <span>Saved: <strong style="color:var(--green)">${fmt(g.savedAmount)}</strong></span>
+            <span>Target: <strong>${fmt(g.targetAmount)}</strong></span>
+          </div>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar ${cls}" style="width:${Math.min(pct,100)}%"></div>
+          </div>
+          <div class="budget-footer" style="margin-top:8px">
+            <span class="remaining-text ${g.achieved ? 'ok' : 'warn'}">
+              ${g.achieved ? '🎉 Goal reached!' : fmt(g.remaining)+' to go'}
+            </span>
+            <span class="pct-text">${pct}%</span>
+          </div>
+          <div style="display:flex;gap:6px;margin-top:12px">
+            <button class="action-btn" onclick="openEditGoal(${g.id})">Edit / Add Savings</button>
+            <button class="action-btn del" onclick="deleteGoal(${g.id})">Delete</button>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  document.getElementById('addGoalBtn').addEventListener('click', () => {
+    editingGoalId = null;
+    document.getElementById('goalModalTitle').textContent = 'Add Savings Goal';
+    document.getElementById('gName').value    = '';
+    document.getElementById('gTarget').value  = '';
+    document.getElementById('gSaved').value   = '';
+    document.getElementById('gDeadline').value = '';
+    document.getElementById('goalModal').classList.add('open');
+  });
+
+  function openEditGoal(id) {
+    // We'll fetch from the loaded grid data stored in DOM — easier to just reload
+    editingGoalId = id;
+    document.getElementById('goalModalTitle').textContent = 'Edit / Add Savings';
+    document.getElementById('goalModal').classList.add('open');
+  }
+
+  function closeGoalModal() {
+    document.getElementById('goalModal').classList.remove('open');
+  }
+
+  document.getElementById('saveGoalBtn').addEventListener('click', async () => {
+    const goalName    = document.getElementById('gName').value.trim();
+    const targetAmount = parseFloat(document.getElementById('gTarget').value);
+    const savedAmount  = parseFloat(document.getElementById('gSaved').value) || 0;
+    const deadline     = document.getElementById('gDeadline').value || null;
+
+    if (!goalName || isNaN(targetAmount) || targetAmount <= 0) {
+      showToast('Please fill in goal name and target amount.', 'error'); return;
+    }
+
+    const btn = document.getElementById('saveGoalBtn');
+    btn.disabled = true; btn.textContent = 'Saving…';
+
+    const url    = editingGoalId ? `/api/savings-goals/${editingGoalId}` : '/api/savings-goals';
+    const method = editingGoalId ? 'PUT' : 'POST';
+
+    const res  = await apiFetch(url, {
+      method,
+      body: JSON.stringify({ goalName, targetAmount, savedAmount, deadline })
+    });
+    const data = await res.json();
+    btn.disabled = false; btn.textContent = 'Save Goal';
+
+    if (!res.ok) { showToast(data.error || 'Failed to save.', 'error'); return; }
+
+    showToast(editingGoalId ? 'Goal updated!' : 'Goal created!', 'ok');
+    closeGoalModal();
+    loadGoals();
+  });
+
+  async function deleteGoal(id) {
+    if (!confirm('Delete this savings goal?')) return;
+    const res = await apiFetch(`/api/savings-goals/${id}`, { method: 'DELETE' });
+    if (res.ok) { showToast('Goal deleted.', 'ok'); loadGoals(); }
+    else showToast('Delete failed.', 'error');
+  }
+
+  // ── Logout ────────────────────────────────────────────────────────────────
+  document.getElementById('logoutBtn').addEventListener('click', () => {
+    localStorage.clear();
+    window.location.href = '/login.html';
+  });
+
+  // Close modals on overlay click
+  ['budgetModal','goalModal'].forEach(id => {
+    document.getElementById(id).addEventListener('click', e => {
+      if (e.target.id === id) document.getElementById(id).classList.remove('open');
+    });
+  });
+
+  // ── Init ──────────────────────────────────────────────────────────────────
+  populateMonthYear();
+  loadBudgets();
+</script>
+</body>
+</html>

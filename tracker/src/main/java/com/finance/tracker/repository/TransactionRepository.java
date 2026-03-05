@@ -1,15 +1,15 @@
 package com.finance.tracker.repository;
 
-import java.time.LocalDate;
-import java.util.List;
-
+import com.finance.tracker.model.Category;
+import com.finance.tracker.model.Transaction;
+import com.finance.tracker.model.TransactionType;
+import com.finance.tracker.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.finance.tracker.model.Category;
-import com.finance.tracker.model.Transaction;
-import com.finance.tracker.model.TransactionType;
+import java.time.LocalDate;
+import java.util.List;
 
 public interface TransactionRepository extends JpaRepository<Transaction, Long> {
 
@@ -32,5 +32,17 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
     // Total income or expense for a user
     @Query("SELECT COALESCE(SUM(t.amount), 0) FROM Transaction t WHERE t.user.id = :userId AND t.type = :type")
     Double sumByUserIdAndType(@Param("userId") Long userId, @Param("type") TransactionType type);
+
+    // Total spent on a specific category in a specific month/year (for budget tracking)
+    @Query("SELECT COALESCE(SUM(t.amount), 0) FROM Transaction t " +
+           "WHERE t.user.id = :userId AND t.category = :category " +
+           "AND t.type = 'EXPENSE' " +
+           "AND FUNCTION('MONTH', t.date) = :month AND FUNCTION('YEAR', t.date) = :year")
+    Double sumByUserIdAndCategoryAndMonthAndYear(
+        @Param("userId") Long userId,
+        @Param("category") Category category,
+        @Param("month") Integer month,
+        @Param("year") Integer year
+    );
 }
 

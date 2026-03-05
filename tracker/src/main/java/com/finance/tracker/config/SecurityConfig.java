@@ -63,6 +63,7 @@ public class SecurityConfig {
                     "/index.html",        // Signup Page
                     "/login.html",        // Login Page (Added to fix 403)
                     "/dashboard.html",    // Dashboard (JS will handle token check)
+                    "/budget.html",       // Budget Page
                     "/static/**",         // Static folder resources
                     "/css/**",            // CSS styles
                     "/js/**",             // JavaScript files
