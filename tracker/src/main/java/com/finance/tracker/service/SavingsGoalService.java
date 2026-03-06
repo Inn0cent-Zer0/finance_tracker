@@ -1,18 +1,17 @@
 package com.finance.tracker.service;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import com.finance.tracker.dto.SavingsGoalRequest;
 import com.finance.tracker.dto.SavingsGoalResponse;
 import com.finance.tracker.model.SavingsGoal;
 import com.finance.tracker.model.User;
 import com.finance.tracker.repository.SavingsGoalRepository;
 import com.finance.tracker.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class SavingsGoalService {
